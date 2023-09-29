@@ -1,0 +1,181 @@
+notifications:
+  email: false
+
+language: cpp
+os: linux
+dist: bionic
+
+stages:
+  - compile
+
+before_install:
+  - if [ $TRAVIS_OS_NAME == osx ] ; then
+       brew update ;
+       brew upgrade ;
+       brew install gcc10 && CC=gcc-10 && CXX=g++-10 ;
+       brew install nss openssl automake autoconf libtool pkg-config $INSTALL || true ;
+    fi
+
+jobs:
+  include:
+  - os: linux
+    dist: bionic
+    compiler: gcc
+    # before_install:
+    #   - sudo apt-cache search python2
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-10
+          - g++-10
+          - gcc-10-multilib
+          - g++-10-multilib
+          - gcc-multilib
+          - g++-multilib
+
+          - curl:i386
+          - libcurl4-openssl-dev:i386
+          - libssl-dev:i386
+          - uuid-dev:i386
+    env:
+      CC=gcc-10
+      CXX=g++-10
+
+  #    # FIXME: cannot find crtbeginS.o: No such file or directory (x86 only)
+  # - os: linux
+  #   dist: bionic
+  #   compiler: clang
+  #   # before_install:
+  #   #   - sudo apt-cache search llvm
+  #   addons:
+  #     apt:
+  #       sources:
+  #         - sourceline: "ppa:ubuntu-toolchain-r/test"
+  #         - sourceline: 'deb https://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main'
+  #           key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+  #       packages:
+  #         - clang-10
+  #         - libclang-10-dev
+  #         - libclang-common-10-dev
+  #         - libomp-10-dev
+  #         - libtbb-dev
+  #         - libc++1-10
+  #         - libc++abi1-10
+  #         - libc++-10-dev
+  #         - libc++abi-10-dev
+  #         - lld-10
+  #         - llvm-10
+  #         - llvm-10-dev
+  #         - llvm-10-runtime
+
+  #         - libc6-dev-i386
+  #         - linux-libc-dev
+
+  #         - curl:i386
+  #         - libcurl4-openssl-dev:i386
+  #         - libssl-dev:i386
+  #         - uuid-dev:i386
+  #   env:
+  #     CC=clang-10
+  #     CXX=clang++-10
+
+  - os: freebsd
+    compiler: clang
+    addons:
+      pkg:
+          - llvm10
+    before_install:
+      - pkg -vv
+    env:
+      CC=/usr/local/bin/clang10
+      CXX=/usr/local/bin/clang++10
+
+  - os: freebsd
+    compiler: gcc
+    addons:
+      pkg:
+          - gcc11
+    before_install:
+      - pkg -vv
+    env:
+      CC=gcc11
+      CXX=g++11
+
+  # - os: osx
+  #   osx_image: xcode12.2
+  #   compiler: gcc
+  #   env:
+  #     CC=gcc10
+  #     CXX=g++10
+
+  - os: windows
+    install:
+      - choco install llvm
+      - choco install mingw
+      - choco install cmake
+
+before_script:
+  - printenv
+#  - ${CC} --version
+#  - ${CXX} --version
+  - cmake --version
+  
+script:
+  # Go to project path
+  - cd $TRAVIS_BUILD_DIR
+
+  # Create x86 build workspace
+  - mkdir build_x86 && cd build_x86
+
+  # Generate x86 project
+  - cmake .. -DX86_BUILD=1
+
+  # RelWithDebInfo
+  - cmake --build . --clean-first --config RelWithDebInfo
+
+  # # Go back to project path
+  - cd ..
+
+  # Create x64 build workspace
+  - mkdir build_x64 && cd build_x64
+
+  # Generate x86 project
+  - cmake .. -DX86_BUILD=0
+
+  # RelWithDebInfo
+  - cmake --build . --clean-first --config RelWithDebInfo
+
+  # # Go back to project path
+  - cd ..
+
+  # Give executable permission for dependency builder script
+  - chmod +x dependency_builder.py
+
+  # Create dependecy output paths
+  - mkdir req_lib
+  - mkdir req_lib/x86
+  - mkdir req_lib/x64
+
+#  # Run dependency builder
+#  - ./dependency_builder.py --out=req_lib/x86 --in=Bin/libnomercy_game_module_x86_GNU.so
+#  - ./dependency_builder.py --out=req_lib/x64 --in=Bin/libnomercy_game_module_x64_GNU.so
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
+before_deploy:
+  - tar cvzf Bin.tar.gz Bin
+  - tar cvzf Libs.tar.gz req_lib
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: "j914Cj+4aLpoOIncME7fwGTf0btsjDAph3Q0Q4qpFH4PD4M5y0NfhxQqpC5mg5GjMbkIYCXOAHSJDqmsCj6RUXtGe8Yr5B/kE5rKEyXAcZoWrXkmdZjDQPbdRJfAovdDkdx2RZ1QSUm79PKvbWKyj5RQMX/xUW3OyxUVSxEhK617Qg25w5wzh2oCw8fvX/TCHD4E2rksTdSQeJNKJ8cMYM7uGUsejVqyiuz03S/KM1DJkumE2xpLrh4y1olyrkxylUdLbnQ55//moq4lR21iQLVoYvoNcpjIOoZcsaD++gb0e8Rzupvhr56bEmQysJr9/G+1TodIGso968rsgxeWgQwqh2Ck8UYy04850NXNQVjrMVzB9AAHCjOVLnm9rGNaa394rSG4Tz97+B8tH9ubaRnzQg8Fr1EMqQNODkoTDdbzkIPPMziPYWqmSaBvaGl5AqT/5xHbijNxUcoXh/MQE6MNLj0dzZ5Woxa3vZZJAUaOb3e1QAQz6YUOkGuyNH/kvdfdqV7sUyk57pgnoTjWO4oa6ZnoWtPVMnQmK9C2dTb/Zfhcnzx4z3mwYDMvKXld0ajTzd/Gwyhsh8VysWabSKu34SCKWHOmxBJQVTkneh7eiLouVPqw2FT9kNobRBLHjfM3BBSToGJqVqdqlNvD0pnIcALLl4iQaxfs7pCGNqM="
+  file:
+    - Bin.tar.gz
+    - Libs.tar.gz
+  on:
+    all_branches: true
