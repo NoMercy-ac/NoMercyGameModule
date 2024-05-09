@@ -12,7 +12,7 @@ Build (Windows / PS / MSVC):
   script:
     - cmake --version  # Verify CMake installation 
     - |
-      cmake -S . -A Win32 -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      cmake -S . -G "Visual Studio 17 2022" -A Win32 -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
     - cmake --build build --config RelWithDebInfo
   tags:
     - win

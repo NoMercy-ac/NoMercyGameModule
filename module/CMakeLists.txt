@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.8)
 project(GameModule CXX)
 set(OUTPUT_NAME "nomercy_game_module_x${TARGET_ARCH_STR}_${CMAKE_CXX_COMPILER_ID}")
 
