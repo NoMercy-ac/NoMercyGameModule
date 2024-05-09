@@ -1,53 +1,53 @@
 stages:
     - build
 
-# Build (FreeBSD / CMake / CLang):
-#     stage: build
-#     variables:
-#         CC: /usr/local/bin/clang13
-#         CXX: /usr/local/bin/clang++13
-#     script:
-#         # Packages
-#         - pkg -vv
-#         - sudo pkg install -y git cmake gmake llvm13 python27
-#         # x86
-#         - mkdir build_x86 && cd build_x86
-#         - cmake .. -DX86_BUILD=1
-#         - cmake --build . --clean-first --config RelWithDebInfo
-#         # Go back
-#         - cd ..
-#         # x64
-#         - mkdir build_x64 && cd build_x64
-#         - cmake .. -DX86_BUILD=0
-#         - cmake --build . --clean-first --config RelWithDebInfo
-#         # Go back
-#         - cd ..
-#         # Give perm
-#         - chmod +x dependency_builder.py
-#         # Out dir
-#         - mkdir req_lib
-#         - mkdir req_lib/x86
-#         - mkdir req_lib/x64
-#         # Dep. builder
-#         - ./dependency_builder.py --out=req_lib/x86 --in=Bin/FreeBSD/libnomercy_game_module_x86_CLang.so
-#         - ./dependency_builder.py --out=req_lib/x64 --in=Bin/FreeBSD/libnomercy_game_module_x64_Clang.so
-#     tags:
-#         - bsd
-#     artifacts:
-#         expire_in: 1 week
-#         paths:
-#           - Bin/
-#           - req_lib/
+Build (FreeBSD / CMake / CLang):
+    stage: build
+    variables:
+        CC: /usr/local/bin/clang13
+        CXX: /usr/local/bin/clang++13
+    script:
+        # Packages
+        - pkg -vv
+        - sudo pkg install -y git cmake gmake llvm13 python27
+        # x86
+        - mkdir build_x86 && cd build_x86
+        - cmake .. -DX86_BUILD=1
+        - cmake --build . --clean-first --config RelWithDebInfo
+        # Go back
+        - cd ..
+        # x64
+        - mkdir build_x64 && cd build_x64
+        - cmake .. -DX86_BUILD=0
+        - cmake --build . --clean-first --config RelWithDebInfo
+        # Go back
+        - cd ..
+        # Give perm
+        - chmod +x dependency_builder.py
+        # Out dir
+        - mkdir req_lib
+        - mkdir req_lib/x86
+        - mkdir req_lib/x64
+        # Dep. builder
+        - ./dependency_builder.py --out=req_lib/x86 --in=Bin/FreeBSD/libnomercy_game_module_x86_CLang.so
+        - ./dependency_builder.py --out=req_lib/x64 --in=Bin/FreeBSD/libnomercy_game_module_x64_Clang.so
+    tags:
+        - bsd
+    artifacts:
+        expire_in: 1 week
+        paths:
+          - Bin/
+          - req_lib/
 
 Build (FreeBSD / CMake / GCC):
     stage: build
     variables:
-        CC: gcc10
-        CXX: g++10
+        CC: gcc13
+        CXX: g++13
     script:
         # Packages
         - pkg -vv
-        - sudo pkg install -y git cmake gmake gcc10 python27
+        - sudo pkg install -y git cmake gmake gcc13 python27
         # x86
         - mkdir build_x86 && cd build_x86
         - cmake .. -DX86_BUILD=1
