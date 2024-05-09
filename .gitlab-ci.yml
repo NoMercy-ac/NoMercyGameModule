@@ -9,7 +9,7 @@ Build (FreeBSD / CMake / CLang):
     script:
         # Packages
         - pkg -vv
-        - pkg install -y git cmake gmake llvm13 python27
+        - sudo pkg install -y git cmake gmake llvm13 python27
         # x86
         - mkdir build_x86 && cd build_x86
         - cmake .. -DX86_BUILD=1
@@ -47,7 +47,7 @@ Build (FreeBSD / CMake / GCC):
     script:
         # Packages
         - pkg -vv
-        - pkg install -y git cmake gmake gcc14 python27
+        - sudo pkg install -y git cmake gmake gcc14 python27
         # x86
         - mkdir build_x86 && cd build_x86
         - cmake .. -DX86_BUILD=1
