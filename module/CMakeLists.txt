@@ -16,8 +16,8 @@ set_property(TARGET ${OUTPUT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${OUTPUT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${OUTPUT_NAME} PROPERTY CMAKE_CXX_EXTENSIONS OFF)
 
-if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    target_link_options(${OUTPUT_NAME} PRIVATE -static)
-endif()
+# if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+#     target_link_options(${OUTPUT_NAME} PRIVATE -static-libgcc -static-libstdc++)
+# endif()
 
 target_link_libraries(${OUTPUT_NAME} ${BIN_EXTRA_LIBS})
