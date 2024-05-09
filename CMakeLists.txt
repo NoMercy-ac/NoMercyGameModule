@@ -4,7 +4,7 @@ project(NoMercyGameModule CXX)
 message(STATUS "CMake version: ${CMAKE_VERSION} target system: ${CMAKE_SYSTEM_NAME}")
 
 if (MSVC)
-	set (CMAKE_GENERATOR "Visual Studio 15 2017" CACHE INTERNAL "" FORCE)
+	# set (CMAKE_GENERATOR "Visual Studio 17 2022" CACHE INTERNAL "" FORCE)
 
 	if (X86_BUILD EQUAL 0)
 		return() # FIXME: error MSB4126: The specified solution configuration "Release|Win64" is invalid. Please specify a valid solution configuration using the Configuration and Platform properties
