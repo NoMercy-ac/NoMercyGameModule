@@ -42,12 +42,12 @@ Build (FreeBSD / CMake / CLang):
 Build (FreeBSD / CMake / GCC):
     stage: build
     variables:
-        CC: gcc14
-        CXX: g++14
+        CC: gcc13
+        CXX: g++13
     script:
         # Packages
         - pkg -vv
-        - sudo pkg install -y git cmake gmake gcc14 python27
+        - sudo pkg install -y git cmake gmake gcc13 python27
         # x86
         - mkdir build_x86 && cd build_x86
         - cmake .. -DX86_BUILD=1
