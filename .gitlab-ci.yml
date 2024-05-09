@@ -4,12 +4,12 @@ stages:
 Build (FreeBSD / CMake / CLang):
     stage: build
     variables:
-        CC: /usr/local/bin/clang10
-        CXX: /usr/local/bin/clang++10
+        CC: /usr/local/bin/clang13
+        CXX: /usr/local/bin/clang++13
     script:
         # Packages
         - pkg -vv
-        - pkg install -y git cmake gmake llvm10 python27
+        - pkg install -y git cmake gmake llvm13 python27
         # x86
         - mkdir build_x86 && cd build_x86
         - cmake .. -DX86_BUILD=1
@@ -31,6 +31,8 @@ Build (FreeBSD / CMake / CLang):
         # Dep. builder
         - ./dependency_builder.py --out=req_lib/x86 --in=Bin/FreeBSD/libnomercy_game_module_x86_CLang.so
         - ./dependency_builder.py --out=req_lib/x64 --in=Bin/FreeBSD/libnomercy_game_module_x64_Clang.so
+    tags:
+        - bsd
     artifacts:
         expire_in: 1 week
         paths:
@@ -40,12 +42,12 @@ Build (FreeBSD / CMake / CLang):
 Build (FreeBSD / CMake / GCC):
     stage: build
     variables:
-        CC: gcc11
-        CXX: g++11
+        CC: gcc14
+        CXX: g++14
     script:
         # Packages
         - pkg -vv
-        - pkg install -y git cmake gmake gcc11 python27
+        - pkg install -y git cmake gmake gcc14 python27
         # x86
         - mkdir build_x86 && cd build_x86
         - cmake .. -DX86_BUILD=1
@@ -67,6 +69,8 @@ Build (FreeBSD / CMake / GCC):
         # Dep. builder
         - ./dependency_builder.py --out=req_lib/x86 --in=Bin/FreeBSD/libnomercy_game_module_x86_GNU.so
         - ./dependency_builder.py --out=req_lib/x64 --in=Bin/FreeBSD/libnomercy_game_module_x64_GNU.so
+    tags:
+        - bsd
     artifacts:
         expire_in: 1 week
         paths:
