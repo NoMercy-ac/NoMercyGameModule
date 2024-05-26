@@ -7,49 +7,67 @@
 #define LOG_FILE_NAME "NoMercy.log"
 #define REST_CERT_FILENAME "NoMercy.crt"
 #define REST_KEY_FILENAME "NoMercy.key"
-#define NOMERCY_API_URL "https://api.nomercy.ac"
+#define NOMERCY_API_URL "https://api-beta.nomercy.ac"
 #define USER_VALIDATOR_VERSION "v1"
 
 CNoMercyGameModule::CNoMercyGameModule() :
-	m_nVerboseType(NG_VERBOSETYPES::NG_VERBOSE_ERROR), m_nVerboseFlags(NG_VERBOSEFLAGS::NG_VERBOSE_FLAG_FILE),
-	m_pkClient(nullptr), m_pkLastError(nullptr), m_bInitialized(false)
+	m_nVerboseType(NM_VERBOSETYPES::NM_VERBOSE_ERROR), m_nVerboseFlags(NM_VERBOSEFLAGS::NM_VERBOSE_FLAG_FILE),
+	m_pkClient(nullptr), m_pkLastError(nullptr), m_bInitialized(false), m_pMessageCallback(nullptr)
 {
 }
 CNoMercyGameModule::~CNoMercyGameModule()
 {
 }
 
-bool CNoMercyGameModule::Initialize()
+bool CNoMercyGameModule::Initialize(const NMMessageCallback_t callback)
 {
 	std::lock_guard <std::recursive_mutex> __lock(m_rmMutex);
 
 	if (m_bInitialized)
 		return false;
 
-	m_pkLastError = new NG_ErrorData();
+	m_pMessageCallback = callback;
+
+	m_pkLastError = new NM_ErrorData();
 	if (!m_pkLastError)
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "Error data memory allocation failed with error: %s", strerror(errno));
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "Error data memory allocation failed with error: %s", strerror(errno));
 		return false;
 	}
 
 	if (!std::filesystem::exists(REST_CERT_FILENAME))
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "REST certificate file not found");
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "REST certificate file not found");
 		return false;
 	}
 	else if (!std::filesystem::exists(REST_KEY_FILENAME))
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "REST key file not found");
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "REST key file not found");
 		return false;
 	}
 
+#ifdef REST_API_ENGINE_HTTPLIB
 	m_pkClient = new httplib::Client(NOMERCY_API_URL, REST_CERT_FILENAME, REST_KEY_FILENAME);
+#else
+	m_pkClient = new cpr::Session();
+#endif
 	if (!m_pkClient)
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "HTTP client memory allocation failed! with error: %s", strerror(errno));
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "HTTP client memory allocation failed! with error: %s", strerror(errno));
 		return false;
 	}
+
+#ifndef REST_API_ENGINE_HTTPLIB
+	m_pkClient->SetSslOptions(
+		cpr::Ssl(
+			cpr::ssl::CertFile{ REST_CERT_FILENAME },
+			cpr::ssl::KeyFile{ REST_KEY_FILENAME },
+			cpr::ssl::TLSv1_3{},
+			cpr::ssl::VerifyHost{ false },
+			cpr::ssl::VerifyPeer{ false }
+		)
+	);
+#endif
 
 	/*
 #ifdef _DEBUG
@@ -58,7 +76,7 @@ bool CNoMercyGameModule::Initialize()
 	*/
 
 	m_bInitialized = true;
-	this->__Log(NG_VERBOSETYPES::NG_VERBOSE_INFO, "NoMercy game module initialized.");
+	this->__Log(NM_VERBOSETYPES::NM_VERBOSE_INFO, "NoMercy game module initialized.");
 	return true;
 }
 void CNoMercyGameModule::Release()
@@ -79,7 +97,7 @@ void CNoMercyGameModule::Release()
 	m_bInitialized = false;
 }
 
-NG_ErrorData* CNoMercyGameModule::GetLastErrorData()
+NM_ErrorData* CNoMercyGameModule::GetLastErrorData()
 {
 	std::lock_guard <std::recursive_mutex> __lock(m_rmMutex);
 	
@@ -92,7 +110,7 @@ const char* CNoMercyGameModule::GetSessionID()
 	return m_stSessionID.c_str();
 }
 
-void CNoMercyGameModule::SetVerbose(NG_VERBOSETYPES verbose_type, NG_VERBOSEFLAGS verbose_flags)
+void CNoMercyGameModule::SetVerbose(NM_VERBOSETYPES verbose_type, NM_VERBOSEFLAGS verbose_flags)
 {
 	std::lock_guard <std::recursive_mutex> __lock(m_rmMutex);
 	
@@ -125,7 +143,7 @@ bool CNoMercyGameModule::ACServer_RegisterServer(uint32_t game_id, const std::st
 	const auto bRet = stResponse != "0";
 	if (bRet)
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_INFO, "Server registered successfully. Session ID: %s", stResponse.c_str());
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_INFO, "Server registered successfully. Session ID: %s", stResponse.c_str());
 		m_stSessionID = stResponse;
 	}
 
@@ -205,7 +223,7 @@ int CNoMercyGameModule::Server_GetConnectedClientCount()
 
 
 template <typename... FormatArgs>
-void CNoMercyGameModule::__Log(NG_VERBOSETYPES type, std::string_view string_template, FormatArgs... format_args)
+void CNoMercyGameModule::__Log(NM_VERBOSETYPES type, std::string_view string_template, FormatArgs... format_args)
 {
 	auto __FormatString = [&]() {
 		const size_t string_size = std::snprintf(nullptr, 0, string_template.data(), std::forward<FormatArgs>(format_args)...);
@@ -225,13 +243,13 @@ void CNoMercyGameModule::__Log(NG_VERBOSETYPES type, std::string_view string_tem
 	auto __GetLogLevel = [&]() -> std::string {
 		switch (type)
 		{
-			case NG_VERBOSETYPES::NG_VERBOSE_DEBUG:
+			case NM_VERBOSETYPES::NM_VERBOSE_DEBUG:
 				return "[DEBUG]";
-			case NG_VERBOSETYPES::NG_VERBOSE_INFO:
+			case NM_VERBOSETYPES::NM_VERBOSE_INFO:
 				return "[INFO]";
-			case NG_VERBOSETYPES::NG_VERBOSE_WARNING:
-				return "[WARNING]";
-			case NG_VERBOSETYPES::NG_VERBOSE_ERROR:
+			case NM_VERBOSETYPES::NM_VERBOSE_WARNINM:
+				return "[WARNINM]";
+			case NM_VERBOSETYPES::NM_VERBOSE_ERROR:
 				return "[ERROR]";
 			default:
 				return fmt::format("[UNKNOWN:{0}]", type);
@@ -245,7 +263,7 @@ void CNoMercyGameModule::__Log(NG_VERBOSETYPES type, std::string_view string_tem
 
 	const auto stLogOutput = fmt::format("{0} {1}", __GetLogLevel(), __FormatString());
 
-	if (m_nVerboseFlags & NG_VERBOSEFLAGS::NG_VERBOSE_FLAG_FILE)
+	if (m_nVerboseFlags & NM_VERBOSEFLAGS::NM_VERBOSE_FLAG_FILE)
 	{
 		std::ofstream __log_file(LOG_FILE_NAME, std::ios_base::app);
 		if (__log_file.is_open())
@@ -254,12 +272,12 @@ void CNoMercyGameModule::__Log(NG_VERBOSETYPES type, std::string_view string_tem
 			__log_file.close();
 		}
 	}
-	if (m_nVerboseFlags & NG_VERBOSEFLAGS::NG_VERBOSE_FLAG_CONSOLE)
+	if (m_nVerboseFlags & NM_VERBOSEFLAGS::NM_VERBOSE_FLAG_CONSOLE)
 	{
 		std::cout << stLogOutput << std::endl;
 	}
 #ifdef _WIN32
-	if (m_nVerboseFlags & NG_VERBOSEFLAGS::NG_VERBOSE_FLAG_DEBUG)
+	if (m_nVerboseFlags & NM_VERBOSEFLAGS::NM_VERBOSE_FLAG_DEBUG)
 	{
 		OutputDebugStringA(stLogOutput.c_str());
 	}
@@ -275,7 +293,7 @@ bool CNoMercyGameModule::__GetRequest(const std::string& body, std::string& resp
 
 	if (!m_pkClient)
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "NoMercy API client is not initialized!");
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "NoMercy API client is not initialized!");
 		return false;
 	}
 
@@ -283,8 +301,9 @@ bool CNoMercyGameModule::__GetRequest(const std::string& body, std::string& resp
 		fmt::format("{0}/{1}{2}", NOMERCY_API_URL, USER_VALIDATOR_VERSION, body) :
 		fmt::format("{0}{1}", NOMERCY_API_URL, body);
 	
-	this->__Log(NG_VERBOSETYPES::NG_VERBOSE_DEBUG, "Sending request to %s", c_stTarget.c_str());
+	this->__Log(NM_VERBOSETYPES::NM_VERBOSE_DEBUG, "Sending request to %s", c_stTarget.c_str());
 
+#ifdef REST_API_ENGINE_HTTPLIB
 	// Allow redirect
 	m_pkClient->set_follow_location(true);
 
@@ -295,24 +314,24 @@ bool CNoMercyGameModule::__GetRequest(const std::string& body, std::string& resp
 	auto headers = httplib::Headers{
 		{ "Content-Type", "text/html"},
 		{ "User-Agent", "NoMercy_GameServer_Client" },
-		{ "ng-session", m_stSessionID },
+		{ "nm-session", m_stSessionID },
 		{ "App-Version", USER_VALIDATOR_VERSION }
 	};
 	const auto res = m_pkClient->Get(c_stTarget.c_str(), headers);
 	if (!res) // httplib error
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "GET request to %s failed with error: %d", c_stTarget.c_str(), res.error());
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with error: %d", c_stTarget.c_str(), res.error());
 
 		m_pkLastError->error_code = static_cast<int32_t>(res.error());
 		m_pkLastError->error_type = HTTP_SERVER_CONN_FAIL;
 		return false;
 	}
 
-	this->__Log(NG_VERBOSETYPES::NG_VERBOSE_DEBUG, "Request completed with status: %d, Response: %s", res->status, res->body.c_str());
+	this->__Log(NM_VERBOSETYPES::NM_VERBOSE_DEBUG, "Request completed with status: %d, Response: %s", res->status, res->body.c_str());
 
 	if (res->status != 200) // HTTP status code
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "GET request to %s failed with status: %d", c_stTarget.c_str(), res->status);
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with status: %d", c_stTarget.c_str(), res->status);
 		
 		m_pkLastError->error_code = res->status;
 		m_pkLastError->error_type = HTTP_STATUS_NOT_VALID;
@@ -321,16 +340,32 @@ bool CNoMercyGameModule::__GetRequest(const std::string& body, std::string& resp
 
 	if (res->body.empty()) // Response
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "GET request to %s failed with empty response", c_stTarget.c_str());
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with empty response", c_stTarget.c_str());
 		
 		m_pkLastError->error_type = RESPONSE_IS_NULL;
 		m_pkLastError->error_code = 0;
 		return false;
 	}
 
+	// Some special cases
+	if (res->body == "REQUIRE_RESTART")
+	{
+		if (m_pMessageCallback)
+		{
+			m_pMessageCallback(NM_MESSAGE_IDS::NM_MSG_REQUIRE_RESTART, nullptr);
+			return true;
+		}
+
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with special response: %s", c_stTarget.c_str(), res->body.c_str());
+
+		m_pkLastError->error_type = REQUIRE_RESTART;
+		m_pkLastError->error_code = 0;
+		return true;
+	}
+
 	if (!bSkipResponseCheck && !this->__StringIsNumber(res->body)) // Response format
 	{
-		this->__Log(NG_VERBOSETYPES::NG_VERBOSE_ERROR, "GET request to %s failed with invalid response: %s", c_stTarget.c_str(), res->body.c_str());
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with invalid response: %s", c_stTarget.c_str(), res->body.c_str());
 		
 		m_pkLastError->error_type = RESPONSE_IS_NOT_VALID;
 		m_pkLastError->error_code = 0;
@@ -339,6 +374,77 @@ bool CNoMercyGameModule::__GetRequest(const std::string& body, std::string& resp
 	}
 
 	response = res->body;
+#else
+	cpr::Response res;
+	try
+	{
+		m_pkClient->SetUrl(cpr::Url{ c_stTarget });
+		m_pkClient->SetHeader(cpr::Header{
+			{ "Content-Type", "text/html" },
+			{ "User-Agent", "NoMercy_GameServer_Client" },
+			{ "nm-session", m_stSessionID },
+			{ "App-Version", USER_VALIDATOR_VERSION }
+		});
+		res = m_pkClient->Get();
+	}
+	catch (const cpr::Error& e)
+	{
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with error: %s", c_stTarget.c_str(), e.message.c_str());
+		
+		m_pkLastError->error_code = static_cast<int32_t>(e.code);
+		m_pkLastError->error_type = HTTP_SERVER_CONN_FAIL;
+		return false;
+	}
+
+	this->__Log(NM_VERBOSETYPES::NM_VERBOSE_DEBUG, "Request completed with status: %d, Response: %s", res.status_code, res.text.c_str());
+
+	if (res.status_code != 200) // HTTP status code
+	{
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with status: %d", c_stTarget.c_str(), res.status_code);
+		
+		m_pkLastError->error_code = res.status_code;
+		m_pkLastError->error_type = HTTP_STATUS_NOT_VALID;
+		return false;
+	}
+
+	if (res.text.empty()) // Response
+	{
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with empty response", c_stTarget.c_str());
+		
+		m_pkLastError->error_type = RESPONSE_IS_NULL;
+		m_pkLastError->error_code = 0;
+		return false;
+	}
+
+	// Some special cases
+	if (res.text == "REQUIRE_RESTART")
+	{
+		if (m_pMessageCallback)
+		{
+			m_pMessageCallback(NM_MESSAGE_IDS::NM_MSG_REQUIRE_RESTART, nullptr);
+			return true;
+		}
+
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with special response: %s", c_stTarget.c_str(), res.text.c_str());
+
+		m_pkLastError->error_type = REQUIRE_RESTART;
+		m_pkLastError->error_code = 0;
+		return true;
+	}
+
+	if (!bSkipResponseCheck && !this->__StringIsNumber(res.text)) // Response format
+	{
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with invalid response: %s", c_stTarget.c_str(), res.text.c_str());
+		
+		m_pkLastError->error_type = RESPONSE_IS_NOT_VALID;
+		m_pkLastError->error_code = 0;
+		strncpy(m_pkLastError->response, res.text.c_str(), sizeof(m_pkLastError->response));
+		return false;
+	}
+
+	response = res.text;
+#endif
+
 	return true;
 }
 

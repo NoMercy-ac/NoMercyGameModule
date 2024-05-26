@@ -57,10 +57,12 @@ if(MSVC)
 	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") 
 		set(BIN_EXTRA_LIBS
 			libcryptod libssld # OpenSSL
+			zlibd libcurld cprd # cURL
 		)
 	else()
 		set(BIN_EXTRA_LIBS
 			libcrypto libssl
+			zlib libcurl cpr # cURL
 		)
 	endif()
 

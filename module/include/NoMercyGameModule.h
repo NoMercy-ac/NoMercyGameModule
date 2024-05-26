@@ -4,40 +4,41 @@
 
 #ifdef _MSC_VER
 	#define __DLLEXPORT		__declspec(dllexport)
-	#define NG_CALLCONV		__cdecl
+	#define NM_CALLCONV		__cdecl
 #else
 	#define __DLLEXPORT		__attribute__ ((visibility("default")))
-	#define NG_CALLCONV
+	#define NM_CALLCONV
 #endif
 
-enum NG_VERBOSETYPES
+enum NM_VERBOSETYPES
 {
-	NG_VERBOSE_NONE,
-	NG_VERBOSE_DEBUG,
-	NG_VERBOSE_INFO,
-	NG_VERBOSE_WARNING,
-	NG_VERBOSE_ERROR
+	NM_VERBOSE_NONE,
+	NM_VERBOSE_DEBUG,
+	NM_VERBOSE_INFO,
+	NM_VERBOSE_WARNINM,
+	NM_VERBOSE_ERROR
 };
 
-enum NG_VERBOSEFLAGS
+enum NM_VERBOSEFLAGS
 {
-	NG_VERBOSE_FLAG_NONE,
-	NG_VERBOSE_FLAG_FILE,
-	NG_VERBOSE_FLAG_CONSOLE,
-	NG_VERBOSE_FLAG_DEBUG
+	NM_VERBOSE_FLAG_NONE,
+	NM_VERBOSE_FLAG_FILE,
+	NM_VERBOSE_FLAG_CONSOLE,
+	NM_VERBOSE_FLAG_DEBUG
 };
 
-enum NG_ERRORTYPES
+enum NM_ERRORTYPES
 {
 	ERROR_TYPE_UNDEFINED = 0,
 	CURL_ENGINE_ERROR = 1,
 	HTTP_SERVER_CONN_FAIL = 2,
 	HTTP_STATUS_NOT_VALID = 3,
 	RESPONSE_IS_NULL = 4,
-	RESPONSE_IS_NOT_VALID = 5
+	RESPONSE_IS_NOT_VALID = 5,
+	REQUIRE_RESTART = 6,
 };
 
-enum NG_USERSTATUS
+enum NM_USERSTATUS
 {
 	USER_UNKNOWNSTATUS = 0,
 	USER_RESPONSE_HANDLE_FAIL = -1,
@@ -49,18 +50,24 @@ enum NG_USERSTATUS
 	USER_INITIALIZED = 4,
 	USER_AUTH_FAILED = 5,
 	USER_BANNED = 6,
-	USER_VIOLATION = 7, 
+	USER_VIOLATION = 7,
 	USER_SUSPECTED_EVENTS = 8
 };
 
-struct NG_ErrorData
+enum NM_MESSAGE_IDS
+{
+	NM_MSG_NONE,
+	NM_MSG_REQUIRE_RESTART,
+};
+
+struct NM_ErrorData
 {
 	int32_t error_type;
 	int32_t error_code;
 	char	response[255];
 
 #ifdef __cplusplus
-	NG_ErrorData()
+	NM_ErrorData()
 	{
 		error_type = 0;
 		error_code = 0;
@@ -69,22 +76,24 @@ struct NG_ErrorData
 #endif
 };
 
-typedef bool (NG_CALLCONV* NGInitializeServer_t)(const char* license_id);
-typedef void (NG_CALLCONV* NGReleaseServer_t)(void);
-typedef NG_ErrorData* (NG_CALLCONV* NGGetLastErrorData_t)(void);
-typedef const char* (NG_CALLCONV* NGGetSessionID_t)(void);
-typedef void (NG_CALLCONV* NGSetVerbose_t)(uint8_t verbose_type, uint8_t verbose_flags);
-typedef bool (NG_CALLCONV* ACServer_CanConnect_t)(void);
-typedef uint8_t (NG_CALLCONV* ACServer_GetVersion_t)(void);
-typedef bool (NG_CALLCONV* ACServer_RegisterServer_t)(uint32_t game_id, const char* license_code, const char* api_key);
-typedef bool (NG_CALLCONV* ACServer_UnregisterServer_t)();
-typedef bool (NG_CALLCONV* Player_IsBanned_t)(const char* player_hwid);
-typedef const char* (NG_CALLCONV* Player_GetHardwareId_t)(const char* player_session_id);
-typedef bool (NG_CALLCONV* Player_ClearHardwareId_t)(const char* player_hwid);
-typedef bool (NG_CALLCONV* Player_ForwardHeartbeatResponse_t)(const char* player_session_id, const char* heartbeat_response);
-typedef int (NG_CALLCONV* Player_ValidateUserBySID_t)(const char* player_session_id);
-typedef int (NG_CALLCONV* Player_ValidateUserByIP_t)(const char* ip_address);
-typedef unsigned int (NG_CALLCONV* Player_GetConnectTime_t)(const char* player_session_id);
-typedef int (NG_CALLCONV* Server_GetConnectedClientCount_t)(void);
+static uint8_t gs_nomercy_hwid_max_length = 255;
+
+typedef void (NM_CALLCONV* NMMessageCallback_t)(const uint8_t message, LPVOID data);
+typedef bool (NM_CALLCONV* NMInitializeServer_t)(const char* license_id, const NMMessageCallback_t callback);
+typedef void (NM_CALLCONV* NMReleaseServer_t)(void);
+typedef NM_ErrorData* (NM_CALLCONV* NMGetLastErrorData_t)(void);
+typedef const char* (NM_CALLCONV* NMGetSessionID_t)(void);
+typedef void (NM_CALLCONV* NMSetVerbose_t)(uint8_t verbose_type, uint8_t verbose_flags);
+typedef bool (NM_CALLCONV* ACServer_CanConnect_t)(void);
+typedef uint8_t(NM_CALLCONV* ACServer_GetVersion_t)(void);
+typedef bool (NM_CALLCONV* ACServer_RegisterServer_t)(uint32_t game_id, const char* license_code, const char* api_key);
+typedef bool (NM_CALLCONV* ACServer_UnregisterServer_t)();
+typedef bool (NM_CALLCONV* Player_IsBanned_t)(const char* player_hwid);
+typedef bool (NM_CALLCONV* Player_GetHardwareId_t)(const char* player_session_id, char* player_hwid);
+typedef bool (NM_CALLCONV* Player_ForwardHeartbeatResponse_t)(const char* player_session_id, const char* heartbeat_response);
+typedef int (NM_CALLCONV* Player_ValidateUserBySID_t)(const char* player_session_id);
+typedef int (NM_CALLCONV* Player_ValidateUserByIP_t)(const char* ip_address);
+typedef unsigned int (NM_CALLCONV* Player_GetConnectTime_t)(const char* player_session_id);
+typedef int (NM_CALLCONV* Server_GetConnectedClientCount_t)(void);
 
 #endif // __NOMERCY_GAME_MODULE__

@@ -45,6 +45,10 @@ public:
 		assert(ms_singleton);
 		return (*ms_singleton);
 	}
+	inline static T& instance()
+	{
+		return Instance();
+	}
 
 	inline static T* InstancePtr()
 	{

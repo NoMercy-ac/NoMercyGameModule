@@ -3,12 +3,18 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
-#include <httplib.h>
 
 #include "singleton.hpp"
 #include "NoMercyGameModule.h"
+#include "defines.h"
 #include <string>
 #include <mutex>
+
+#ifdef REST_API_ENGINE_HTTPLIB
+#include <httplib.h>
+#else
+#include <cpr/cpr.h>
+#endif
 
 class CNoMercyGameModule : public CSingleton <CNoMercyGameModule>
 {
@@ -23,13 +29,13 @@ class CNoMercyGameModule : public CSingleton <CNoMercyGameModule>
 	public:
 		CNoMercyGameModule();
 		
-		bool Initialize();
+		bool Initialize(const NMMessageCallback_t callback);
 		void Release();
 		
-		NG_ErrorData* GetLastErrorData();
+		NM_ErrorData* GetLastErrorData();
 		const char* GetSessionID();
 
-		void SetVerbose(NG_VERBOSETYPES verbose_type, NG_VERBOSEFLAGS verbose_flags);
+		void SetVerbose(NM_VERBOSETYPES verbose_type, NM_VERBOSEFLAGS verbose_flags);
 		
 		bool ACServer_CanConnect();
 		int ACServer_GetVersion();
@@ -45,7 +51,7 @@ class CNoMercyGameModule : public CSingleton <CNoMercyGameModule>
 
 	protected:
 		template <typename... FormatArgs>
-		void __Log(NG_VERBOSETYPES type, std::string_view string_template, FormatArgs... format_args);
+		void __Log(NM_VERBOSETYPES type, std::string_view string_template, FormatArgs... format_args);
 		
 		bool __GetRequest(const std::string& body, std::string& response, bool bSkipResponseCheck = false, bool bCommonPath = true);
 		bool __StringIsNumber(const std::string& s) const;
@@ -54,11 +60,16 @@ class CNoMercyGameModule : public CSingleton <CNoMercyGameModule>
 	private:
 		mutable std::recursive_mutex m_rmMutex;
 
-		NG_VERBOSETYPES m_nVerboseType;
-		NG_VERBOSEFLAGS m_nVerboseFlags;
+		NMMessageCallback_t m_pMessageCallback;
+		NM_VERBOSETYPES m_nVerboseType;
+		NM_VERBOSEFLAGS m_nVerboseFlags;
 
+#ifdef REST_API_ENGINE_HTTPLIB
 		httplib::Client*	m_pkClient;
-		NG_ErrorData*		m_pkLastError;
+#else
+		cpr::Session*		m_pkClient;
+#endif
+		NM_ErrorData*		m_pkLastError;
 		std::string			m_stSessionID;
 
 		bool m_bInitialized;

@@ -11,6 +11,9 @@
 			"titleBar.activeForeground": "#FFFBFD"
 		},
 		"files.associations": {
+			"*.json": "jsonc",
+			"*.pyx": "python",
+			"*.quest": "lua",
 			"iostream": "cpp",
 			"algorithm": "cpp",
 			"cctype": "cpp",
@@ -84,7 +87,12 @@
 			"format": "cpp",
 			"forward_list": "cpp",
 			"iomanip": "cpp",
-			"stop_token": "cpp"
+			"stop_token": "cpp",
+			"filesystem": "cpp",
+			"fstream": "cpp",
+			"random": "cpp",
+			"regex": "cpp",
+			"set": "cpp"
 		}
 	}
 }
