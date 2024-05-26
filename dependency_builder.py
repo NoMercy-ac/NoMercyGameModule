@@ -44,10 +44,11 @@ def export_lib(outdir, infiles):
 			if dep == infile:
 				continue
 			
-			print("\tdep: {0}".format(dep))
+			real_dep = os.path.realpath(dep)
+			print("\tdep: {0} -> {1}".format(dep, real_dep))
 			
-			if pathmap.count(dep) == 0:
-				pathmap.append(dep)
+			if pathmap.count(real_dep) == 0:
+				pathmap.append(real_dep)
 	
 	for src in pathmap:
 		if not os.path.isfile(src):
@@ -92,4 +93,3 @@ def main(argv):
 
 if __name__ == "__main__":
 	sys.exit(main(sys.argv[1:]))
-
