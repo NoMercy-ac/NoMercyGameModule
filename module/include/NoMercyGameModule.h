@@ -1,7 +1,7 @@
 #ifndef __NOMERCY_GAME_MODULE__
 #define __NOMERCY_GAME_MODULE__
 #include <stdint.h>
-#include <string>
+#include <cstring>
 
 #ifdef _MSC_VER
 	#define __DLLEXPORT		__declspec(dllexport)
