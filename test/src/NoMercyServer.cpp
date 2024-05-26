@@ -184,7 +184,7 @@ void CNoMercyServer::__UnloadServerPlugin()
 
 //=============================================================================================================
 
-void OnNomercyMessage(const uint8_t message, LPVOID data)
+void OnNomercyMessage(const uint8_t message, void* data)
 {
 	sys_log(0, "NMMessageCallback> Message: %d Data: %p", message, data);
 

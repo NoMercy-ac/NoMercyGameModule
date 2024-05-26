@@ -1,6 +1,7 @@
 #ifndef __NOMERCY_GAME_MODULE__
 #define __NOMERCY_GAME_MODULE__
 #include <stdint.h>
+#include <string>
 
 #ifdef _MSC_VER
 	#define __DLLEXPORT		__declspec(dllexport)
@@ -78,7 +79,7 @@ struct NM_ErrorData
 
 static uint8_t gs_nomercy_hwid_max_length = 255;
 
-typedef void (NM_CALLCONV* NMMessageCallback_t)(const uint8_t message, LPVOID data);
+typedef void (NM_CALLCONV* NMMessageCallback_t)(const uint8_t message, void* data);
 typedef bool (NM_CALLCONV* NMInitializeServer_t)(const char* license_id, const NMMessageCallback_t callback);
 typedef void (NM_CALLCONV* NMReleaseServer_t)(void);
 typedef NM_ErrorData* (NM_CALLCONV* NMGetLastErrorData_t)(void);
