@@ -8,6 +8,7 @@
 #include <atomic>
 #include <unordered_map>
 #endif
+#include <string>
 
 #ifdef GAME_IMPLEMENTATION
 class CNoMercyServer : public singleton <CNoMercyServer>
