@@ -362,6 +362,20 @@ bool CNoMercyGameModule::__GetRequest(const std::string& body, std::string& resp
 		m_pkLastError->error_code = 0;
 		return true;
 	}
+	else if (res->body == "UNALLOWED_LICENSE_TYPE")
+	{
+		if (m_pMessageCallback)
+		{
+			m_pMessageCallback(NM_MESSAGE_IDS::NM_MSG_UNALLOWED_LICENSE_TYPE, nullptr);
+			return true;
+		}
+
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with special response: %s", c_stTarget.c_str(), res->body.c_str());
+
+		m_pkLastError->error_type = UNALLOWED_LICENSE_TYPE;
+		m_pkLastError->error_code = 0;
+		return false;
+	}
 
 	if (!bSkipResponseCheck && !this->__StringIsNumber(res->body)) // Response format
 	{
@@ -430,6 +444,20 @@ bool CNoMercyGameModule::__GetRequest(const std::string& body, std::string& resp
 		m_pkLastError->error_type = REQUIRE_RESTART;
 		m_pkLastError->error_code = 0;
 		return true;
+	}
+	else if (res.text == "UNALLOWED_LICENSE_TYPE")
+	{
+		if (m_pMessageCallback)
+		{
+			m_pMessageCallback(NM_MESSAGE_IDS::NM_MSG_UNALLOWED_LICENSE_TYPE, nullptr);
+			return true;
+		}
+
+		this->__Log(NM_VERBOSETYPES::NM_VERBOSE_ERROR, "GET request to %s failed with special response: %s", c_stTarget.c_str(), res.text.c_str());
+
+		m_pkLastError->error_type = UNALLOWED_LICENSE_TYPE;
+		m_pkLastError->error_code = 0;
+		return false;
 	}
 
 	if (!bSkipResponseCheck && !this->__StringIsNumber(res.text)) // Response format

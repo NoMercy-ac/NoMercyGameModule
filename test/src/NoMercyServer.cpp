@@ -194,6 +194,10 @@ void OnNomercyMessage(const uint8_t message, void* data)
 		sys_log(0, "NMMessageCallback> Require restart message received!");
 		CNoMercyServer::Instance().ReconnectToNoMercyServer();
 		break;
+	case NM_MSG_UNALLOWED_LICENSE_TYPE:
+		sys_err("NMMessageCallback> Unallowed license type message received!");
+		std::exit(1);
+		break;
 	default:
 		sys_err("NMMessageCallback> Unknown message received: %d", message);
 		break;
